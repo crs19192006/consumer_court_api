@@ -1,4 +1,6 @@
 import requests
+import json
+from datetime import date
 
 BASE_URL = (
     "https://e-jagriti.gov.in/services/case/"
@@ -135,3 +137,37 @@ def get_district_commission_id(state_name, district_name):
             return district["commissionId"]
 
     return None
+
+
+def get_cause_list(commission_id, court_id="all"):
+
+    url = (
+        "https://e-jagriti.gov.in/services/"
+        "courtmaster/courtRoom/v1/getAllEjclData"
+    )
+
+    params = {
+        "commissionId": commission_id,
+        "clDate": date.today().strftime("%Y-%m-%d")
+    }
+    if court_id != "all":
+        params["courtId"] = court_id
+
+    response = requests.get(
+        url,
+        params=params,
+        headers=HEADERS,
+        timeout=30
+    )
+
+    data = response.json()
+
+    print("RAW RESPONSE:")
+    print(data)
+
+    if not data.get("data"):
+        return []
+
+    cl_data = data["data"][0]["clData"]
+
+    return json.loads(cl_data)
