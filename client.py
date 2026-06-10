@@ -2,10 +2,7 @@ import requests
 import json
 from datetime import date
 
-BASE_URL = (
-    "https://e-jagriti.gov.in/services/case/"
-    "caseFilingService/v2/getCaseStatus"
-)
+BASE_URL = ("https://e-jagriti.gov.in/services/case/caseFilingService/v2/getCaseStatus")
 
 HEADERS = {
     "User-Agent": (
@@ -24,32 +21,37 @@ def build_params(search_value):
 
     # Case Number
     if "/" in search_value:
-        return {
-            "caseNumber": search_value.upper()
-        }
+        return {"caseNumber": search_value.upper()}
 
     # e-Daakhil Number
     if search_value.upper().startswith("A"):
-        return {
-            "fileApplicationNumber": search_value.upper()
-        }
+        return {"fileApplicationNumber": search_value.upper()}
 
     # Filing Reference Number
-    return {
-        "filingReferenceNumber": search_value
-    }
+    return {"filingReferenceNumber": search_value}
 
 
 def get_case_status(search_value):
     params = build_params(search_value)
-
     response = requests.get(
         BASE_URL,
         params=params,
         headers=HEADERS,
         timeout=10
     )
+    return response.json()
 
+
+def get_case_details(case_number):
+    url = ("https://e-jagriti.gov.in/services/report/report/case-details")
+    response = requests.post(
+        url,
+        json={
+            "caseOrReferenceNumber": case_number
+        },
+        headers=HEADERS,
+        timeout=30
+    )
     return response.json()
 
 
@@ -77,26 +79,17 @@ def search_by_party_name(
 
 
 def get_all_states():
-    url = (
-        "https://e-jagriti.gov.in/services/report/report/"
-        "getStateCommissionAndCircuitBench"
-    )
-
+    url = ("https://e-jagriti.gov.in/services/report/report/getStateCommissionAndCircuitBench")
     response = requests.get(
         url,
         headers=HEADERS,
         timeout=10
     )
-
     return response.json()
 
 
 def get_district_commissions(state_commission_id):
-    url = (
-        "https://e-jagriti.gov.in/services/report/report/"
-        "getDistrictCommissionByCommissionId"
-    )
-
+    url = ("https://e-jagriti.gov.in/services/report/report/getDistrictCommissionByCommissionId")
     response = requests.get(
         url,
         params={
@@ -105,17 +98,14 @@ def get_district_commissions(state_commission_id):
         headers=HEADERS,
         timeout=10
     )
-
     return response.json()
 
 
 def get_state_commission_id(state_name):
     states = get_all_states()
-
     for state in states["data"]:
         if state["commissionNameEn"].lower() == state_name.lower():
             return state["commissionId"]
-
     return None
 
 
@@ -124,15 +114,12 @@ def get_district_commission_id(state_name, district_name):
 
     if not state_commission_id:
         return None
-
-    districts = get_district_commissions(
-        state_commission_id
-    )
+    
+    districts = get_district_commissions(state_commission_id)
 
     for district in districts["data"]:
         if (
-            district["commissionNameEn"].lower()
-            == district_name.lower()
+            district["commissionNameEn"].lower()== district_name.lower()
         ):
             return district["commissionId"]
 
@@ -140,11 +127,7 @@ def get_district_commission_id(state_name, district_name):
 
 
 def get_cause_list(commission_id, court_id="all"):
-
-    url = (
-        "https://e-jagriti.gov.in/services/"
-        "courtmaster/courtRoom/v1/getAllEjclData"
-    )
+    url = ("https://e-jagriti.gov.in/services/courtmaster/courtRoom/v1/getAllEjclData")
 
     params = {
         "commissionId": commission_id,
@@ -161,9 +144,6 @@ def get_cause_list(commission_id, court_id="all"):
     )
 
     data = response.json()
-
-    print("RAW RESPONSE:")
-    print(data)
 
     if not data.get("data"):
         return []
